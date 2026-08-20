@@ -1,0 +1,5 @@
+.env
+.venv/
+.idea/
+GITHUB PERSON ACCESS TOKEN.txt
+DEVICE STATUS API CLIENT BUILD.txt
