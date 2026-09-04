@@ -4,15 +4,20 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime
 from datetime import timezone
+import sys
 
 load_dotenv()
 token = os.getenv("GITHUB_TOKEN")
 
 
-def get_github_response():
-    response = requests.get('https://api.github.com/users/DJH333/repos' ,headers={"Authorization": f"Bearer {token}"})
-    data = response.json()
-    return data
+def get_github_response(username):
+    response = requests.get(f'https://api.github.com/users/{username}/repos' ,headers={"Authorization": f"Bearer {token}"})
+    if response.status_code != 200:
+        print(f"Error: received status code {response.status_code} for username '{username}'")
+        sys.exit()
+    else:
+        data = response.json()
+        return data
 
 def parse_repos(data):
     repos = []
@@ -81,7 +86,8 @@ ALERTS:
 NO ALERTS: 
 -------------""")
 
-data = get_github_response()
+username = input("Enter GitHub username: ")
+data = get_github_response(username)
 repos = parse_repos(data)
 repos = check_stale_repos(repos)
 repos = check_needs_attention(repos)

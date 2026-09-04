@@ -1,36 +1,52 @@
 # DEVICE STATUS API CLIENT BUILD / STEPS
 
-**ORIGIN STORY (for interviews):** "I built a device-status concept with static local JSON first (forklift project), realized I needed real API and auth experience before building my own API, went and got that experience deliberately with GitHub's REST API (device status client API project), then came back and finished the forklift project properly."
+**ORIGIN STORY (for interviews):** "I built a device-status concept with static local JSON first (forklift project), 
+realized I needed real API and auth experience before building my own API, went and got that experience deliberately 
+with GitHub's REST API (device status client API project), then came back and finished the forklift project properly."
 
-This file includes each building block / step I took and why (used for explaining the project on my resume, in a README, and out loud in an interview).
+This file includes each building block / step I took and why (used for explaining the project on my resume, in a README, 
+and out loud in an interview).
 
-**Legend:** `[STEP]` = something I did/built. `[CONCEPT]` = something I learned/understood along the way. Some lines are both.
+**Legend:** `[STEP]` = something I did/built. `[CONCEPT]` = something I learned/understood along the way. Some lines 
+are both.
 
 ---
 
 ## WHY GITHUB API
 
-- `[CONCEPT]` Chose GitHub API because it's closer to a real SaaS integration pattern (Bearer token in a header) than query-param API keys — more representative of what I'd see in actual SE/Implementation Engineer work.
+- `[CONCEPT]` Chose GitHub API because it's closer to a real SaaS integration pattern (Bearer token in a header) than 
+query-param API keys — more representative of what I'd see in actual SE/Implementation Engineer work.
 
 ## SMALLEST POSSIBLE VERSION — DONE FIRST
 
-- `[CONCEPT]` Postman-first, matching the workflow: read docs → test in Postman → understand it → implement in Python → add error handling.
-- `[CONCEPT]` The smallest version does exactly one thing: authenticate to the GitHub API with a token and retrieve a list of repos for one account, then just print the raw JSON. No business rules, no offline/stale logic yet, no report formatting. Just prove the connection and auth work end to end.
-- `[CONCEPT]` Why start that small? Mirrors a real SE workflow: validate raw connectivity and auth in isolation before building logic on top of it. If something breaks later, the connection is already ruled out as the cause.
+- `[CONCEPT]` Postman-first, matching the workflow: read docs → test in Postman → understand it → implement in Python → 
+add error handling.
+- `[CONCEPT]` The smallest version does exactly one thing: authenticate to the GitHub API with a token and retrieve a 
+list of repos for one account, then just print the raw JSON. No business rules, no offline/stale logic yet, no report 
+formatting. Just prove the connection and auth work end to end.
+- `[CONCEPT]` Why start that small? Mirrors a real SE workflow: validate raw connectivity and auth in isolation before 
+building logic on top of it. If something breaks later, the connection is already ruled out as the cause.
 
 ## AUTH SETUP
 
-- `[STEP]` Created a fine-grained personal access token on GitHub, scoped to **Public Repositories (read-only)** — least-privilege choice since I only need to read public repo data.
-  - Token value intentionally not stored in this file — kept only in `.env`, which is gitignored. (Redacted a real token that had been pasted here earlier — good reminder that any file holding a real secret in plain text is a risk, gitignored or not.)
-- `[CONCEPT]` For "Public Repositories (read-only)" tokens, GitHub doesn't require selecting specific repos or permissions — that access already exists for anyone, authenticated or not. An empty "Repository access" / "Repository permissions" panel for this token type is expected, not a misconfiguration.
+- `[STEP]` Created a fine-grained personal access token on GitHub, scoped to **Public Repositories (read-only)** — 
+least-privilege choice since I only need to read public repo data.
+  - Token value intentionally not stored in this file — kept only in `.env`, which is gitignored. (Redacted a real 
+    token that had been pasted here earlier — good reminder that any file holding a real secret in plain text is a risk,
+    gitignored or not.)
+- `[CONCEPT]` For "Public Repositories (read-only)" tokens, GitHub doesn't require selecting specific repos or 
+permissions — that access already exists for anyone, authenticated or not. An empty "Repository access" / "Repository 
+permissions" panel for this token type is expected, not a misconfiguration.
 - `[STEP]` Found the endpoint for "list repositories for a user": `https://api.github.com/users/{username}/repos`
-  - `[CONCEPT]` Distinguished this from `/repos/{owner}/{repo}`, which takes a specific repo name and returns a single repo object, not a list — wrong shape for what I needed.
+  - `[CONCEPT]` Distinguished this from `/repos/{owner}/{repo}`, which takes a specific repo name and returns a single 
+repo object, not a list — wrong shape for what I needed.
 - `[STEP]` Created a Postman GET request to `https://api.github.com/users/DJH333/repos` with the Bearer token attached.
 - `[STEP]` Identified fields in the Postman JSON response that could be useful for this project:
   - `open_issues`
   - `pushed_at` / `updated_at`
   - `visibility`: `"public"`
-- `[CONCEPT]` `updated_at` reacts to more than code changes (description edits, stars, etc.), making it a noisy/unreliable signal for a "staleness" rule. `pushed_at` only updates on an actual `git push`, making it the more trustworthy field for detecting real inactivity.
+- `[CONCEPT]` `updated_at` reacts to more than code changes (description edits, stars, etc.), making it a 
+noisy/unreliable signal for a "staleness" rule. `pushed_at` only updates on an actual `git push`, making it the more trustworthy field for detecting real inactivity.
 - `[CONCEPT]` `/users/{username}/repos` is a public endpoint — it works with zero authentication, since public repo data is readable by anyone. Authenticating still matters for a much higher rate limit (~5,000/hr vs. ~60/hr unauthenticated) and for realistic auth practice.
 
 ## POSTMAN → PYTHON
@@ -133,14 +149,20 @@ This file includes each building block / step I took and why (used for explainin
 
 ## COMMIT 3 — SPLITTING BY CONCERN
 
-- `[CONCEPT]` Had `main.py` (business rules + alerts) and `build_notes.md` (new documentation file) both staged together for one commit. Paused and reconsidered: these are two different *kinds* of change — a functional code milestone vs. a documentation addition — and bundling them buries the code milestone under an unrelated file in the commit history.
-- `[STEP]` Used `git restore --staged build_notes.md` to unstage just that one file without losing any actual changes — unstaging only affects what's included in the *next* commit, not the file's contents on disk.
+- `[CONCEPT]` Had `main.py` (business rules + alerts) and `build_notes.md` (new documentation file) both staged together 
+for one commit. Paused and reconsidered: these are two different *kinds* of change — a functional code milestone vs. a 
+documentation addition — and bundling them buries the code milestone under an unrelated file in the commit history.
+- `[STEP]` Used `git restore --staged build_notes.md` to unstage just that one file without losing any actual changes — 
+unstaging only affects what's included in the *next* commit, not the file's contents on disk.
 - `[STEP]` Committed `main.py` alone first, with a message describing the business-rules/alerts work specifically.
 - `[STEP]` Committed `build_notes.md` separately afterward, with its own message describing it as documentation.
-- `[CONCEPT]` General principle worth keeping: a commit should represent one coherent change. If two changes are genuinely unrelated in *kind* (code vs. docs, one feature vs. another), stage and commit them separately, even if they happened to land in the same working session.
+- `[CONCEPT]` General principle worth keeping: a commit should represent one coherent change. If two changes are 
+genuinely unrelated in *kind* (code vs. docs, one feature vs. another), stage and commit them separately, even if they 
+happened to land in the same working session.
 
 ## NEXT UP
 
+- `[STEP]` Parameterize `get_github_response` with a `username` argument (remove hardcoded `DJH333` from the URL) + add an `input("Enter a GitHub username: ")` prompt at the bottom of the script, above the function call, so the tool works for any GitHub user, not just me. (Reasoned through the design already — just needs to be applied to `main.py`.)
 - `[STEP]` Split `main.py` into `api_client.py` / `device_rules.py` / `report_generator.py` — the file now holds four genuinely different responsibilities (API communication, two business rules, alert generation, output formatting) rather than one simple pipeline. This is the natural trigger point discussed earlier.
 - `[STEP]` Add error handling for expected failure cases: 401, 404, timeout, rate limiting (429), malformed JSON.
 - `[STEP]` Add basic `pytest` tests for the business rules (`check_stale_repos`, `check_needs_attention`) now that they're simple, isolated functions — good candidates for testing before the file gets split.
