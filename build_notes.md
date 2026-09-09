@@ -195,6 +195,27 @@ This file includes each building block / step I took and why (used for explainin
 
 - `[STEP]` All four error cases from the original project plan now handled and deliberately tested: invalid username (404), timeout, rate limiting (429), and malformed JSON — each with its own clear message, consistent `sys.exit(1)` failure convention, and a real, reproducible way to trigger and verify it.
 
+## TESTING — SETUP AND FIRST UNIT TESTS
+
+- `[CONCEPT]` A test's core idea: you (like a teacher who wrote the problem) make up fake, controlled input where you already know the correct answer, run the real function on it, and check whether the function's actual output matches what you predicted. `assert` is the tool that does that check — silent if the prediction was right, throws an error if it wasn't.
+- `[CONCEPT]` Fake, hand-written input is used deliberately, not because it's easier, but because it's *reliable* — real GitHub data changes over time, so a test built on live data could start failing for reasons that have nothing to do with a bug (e.g. a repo that used to be "not stale" eventually crossing the 30-day line on its own).
+- `[CONCEPT]` **Unit tests** (what was built here) test one small, isolated function completely on its own with fake input — full control, fast, no network dependency. **Integration tests** test real pieces working together for real (e.g. actually calling `get_github_response()` against live GitHub) — more realistic, but slower, dependent on network/credentials, and can fail for reasons unrelated to the code itself. Chose unit tests with fake data for this project's business rules as the right-sized approach; would add integration tests separately in a bigger system.
+- `[STEP]` `pip install pytest`.
+- `[STEP]` Created `tests/test_device_rules.py` — pytest auto-discovers files/functions whose names start with `test_`.
+- `[CONCEPT]` Real debugging sequence hit while setting this up:
+  - `ModuleNotFoundError: No module named 'main'` — happened because `test_device_rules.py` lives one folder down from `main.py` (`tests/`), and pytest didn't know the project root was a place to search for importable modules. Fixed by adding a blank `conftest.py` **at the project root** (not inside `tests/`) — this is a permanent, ongoing part of the project's structure now, not a one-time patch; deleting it would bring the same error right back.
+  - `OSError: pytest: reading from stdin while output is captured!` — happened because *importing* a Python file also runs any code sitting unprotected at that file's top level. `main.py`'s bottom lines (`input("Enter GitHub username: ")` and the rest of the execution flow) ran the moment the test file imported `check_stale_repos`, and pytest has no interactive terminal to answer `input()` with.
+  - `[CONCEPT]` Fixed with the standard `if __name__ == "__main__":` pattern: wrapped all of `main.py`'s bottom execution lines under this check. `__name__` is a built-in variable Python sets to `"__main__"` only when a file is run directly (`python main.py`), but to the module's real name when it's *imported* elsewhere — so this guard means "only actually run this code when the file is launched directly, not just because something imported a function from it." A genuinely standard, widely-used Python pattern, not a one-off workaround.
+- `[STEP]` Wrote 4 unit tests total, covering both business rules in both directions (a positive case where the flag should be `True`, and a negative case where it should be `False`) — not just the "happy path":
+  - `test_check_stale_repos` — old `pushed_at` date → expects `stale: True`
+  - `test_check_stale_repos_not_stale` — recent `pushed_at` date (within 30 days) → expects `stale: False`
+  - `test_check_needs_attention` — `open_issues: 1` → expects `needs_attention: True`
+  - `test_check_needs_attention_no_issues` — `open_issues: 0` → expects `needs_attention: False`
+- `[CONCEPT]` Testing only the "should be True" case isn't enough — a function that's buggy and *always* returns `True` no matter what would still pass a test that only ever checks the `True` path. Testing both directions is what actually proves the logic discriminates correctly between cases.
+- `[STEP]` All 4 tests confirmed passing (`pytest` → `4 passed`) before committing.
+- `[CONCEPT]` Learned pytest supports more advanced structures beyond plain `assert` — fixtures (reusable shared setup data) and `@pytest.mark.parametrize` (running the same test logic across a list of different input/expected-output pairs, instead of writing near-duplicate test functions for each case) — worth knowing these exist for future projects, but not necessary for a test suite this size. Plain `assert`-based tests are a completely valid, standard, real-world pattern on their own.
+- `[CONCEPT]` Bundled the `__name__` fix and the new tests into one commit rather than splitting them — reasoning: unlike the earlier code-vs-docs split, these two changes are causally connected (the `__name__` guard was specifically needed *in order to* make testing possible at all), so together they represent one coherent unit of work, not two unrelated changes that just happened to land in the same session.
+
 ## NEXT UP
 
 - `[STEP]` Split `main.py` into `api_client.py` / `device_rules.py` / `report_generator.py` — the file now holds four genuinely different responsibilities (API communication, two business rules, alert generation, output formatting) rather than one simple pipeline. This is the natural trigger point discussed earlier.

@@ -98,12 +98,12 @@ ALERTS:
 NO ALERTS: 
 -------------""")
 
-username = input("Enter GitHub username: ")
-data = get_github_response(username)
-repos = parse_repos(data)
-repos = check_stale_repos(repos)
-repos = check_needs_attention(repos)
-alerts = check_alerts(repos)
-#print(json.dumps(repos, indent=4))
-print_report(repos)
-print_alerts(alerts)
+if __name__ == "__main__":
+    username = input("Enter GitHub username: ")
+    data = get_github_response(username)
+    repos = parse_repos(data)
+    repos = check_stale_repos(repos)
+    repos = check_needs_attention(repos)
+    alerts = check_alerts(repos)
+    print_report(repos)
+    print_alerts(alerts)
