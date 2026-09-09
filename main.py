@@ -11,13 +11,18 @@ token = os.getenv("GITHUB_TOKEN")
 
 
 def get_github_response(username):
-    response = requests.get(f'https://api.github.com/users/{username}/repos' ,headers={"Authorization": f"Bearer {token}"})
+    try:
+        response = requests.get(f'https://api.github.com/users/{username}/repos' ,headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    except requests.exceptions.Timeout as err:
+        print(f"Request timed out while trying to reach GitHub for username '{username}'")
+        print(err)
+        sys.exit(1)
     if response.status_code != 200:
         print(f"Error: received status code {response.status_code} for username '{username}'")
-        sys.exit()
+        sys.exit(1)
     else:
         data = response.json()
-        return data
+    return data
 
 def parse_repos(data):
     repos = []
