@@ -216,10 +216,22 @@ This file includes each building block / step I took and why (used for explainin
 - `[CONCEPT]` Learned pytest supports more advanced structures beyond plain `assert` — fixtures (reusable shared setup data) and `@pytest.mark.parametrize` (running the same test logic across a list of different input/expected-output pairs, instead of writing near-duplicate test functions for each case) — worth knowing these exist for future projects, but not necessary for a test suite this size. Plain `assert`-based tests are a completely valid, standard, real-world pattern on their own.
 - `[CONCEPT]` Bundled the `__name__` fix and the new tests into one commit rather than splitting them — reasoning: unlike the earlier code-vs-docs split, these two changes are causally connected (the `__name__` guard was specifically needed *in order to* make testing possible at all), so together they represent one coherent unit of work, not two unrelated changes that just happened to land in the same session.
 
+## FILE SPLIT — api_client.py / device_rules.py / report_generator.py
+
+- `[CONCEPT]` Reached the trigger point identified earlier: `main.py` was holding four genuinely different responsibilities (API communication, data shaping, business-rule decisions, output formatting), not one simple pipeline — time to split, per the original project structure plan.
+- `[STEP]` Sorted every function by responsibility before moving any code, one function at a time:
+  - `get_github_response`, `parse_repos` → `api_client.py`
+  - `check_stale_repos`, `check_needs_attention`, `check_alerts` → `device_rules.py`
+  - `print_report`, `print_alerts` → `report_generator.py`
+  - the `if __name__ == "__main__":` orchestration block → stays in `main.py`
+- `[CONCEPT]` Refined the reasoning for `parse_repos` specifically, since it was the least obvious placement: it doesn't decide what the data *means* (that's `device_rules.py`'s job — stale, needs attention), it *translates* GitHub's specific raw JSON shape into a clean, predictable structure the business rules can rely on. If GitHub's API were ever swapped for a different one, `parse_repos` would need to change; the business rules wouldn't — that dependency on the specific API's shape is what ties it to the API layer, not the rules layer.
+- `[STEP]` Each new file only imports what its own functions actually need — e.g. `device_rules.py` needs `datetime`/`timezone` but not `requests`, `sys`, or `dotenv` at all, since none of its functions touch the network or the environment directly.
+- `[STEP]` `main.py` now just imports from all three modules and runs the orchestration sequence — a thin entry point, no business logic or API details of its own.
+- `[CONCEPT]` The split broke an existing import: `tests/test_device_rules.py` was importing `check_stale_repos`/`check_needs_attention` `from main`, which was only ever correct because everything used to live in one file. Updated the test file's import to pull from `device_rules` instead — a concrete, hands-on example of why moving code between files means updating everywhere that code is referenced, not just the definition site.
+- `[STEP]` Re-verified both ways after the split, same rigor as every other change in this project: `python main.py` (full report, real username, still works end to end) and `pytest` (all 4 tests still passing) — confirms the split was purely structural and didn't change any actual behavior.
+- `[CONCEPT]` Treated this as one commit covering all five changed files (`main.py`, three new modules, the test file) — reasoning: it's one coherent architectural change (the split), not several unrelated edits that happened to land together.
+
 ## NEXT UP
 
-- `[STEP]` Split `main.py` into `api_client.py` / `device_rules.py` / `report_generator.py` — the file now holds four genuinely different responsibilities (API communication, two business rules, alert generation, output formatting) rather than one simple pipeline. This is the natural trigger point discussed earlier.
-- `[STEP]` Add error handling for expected failure cases: 401, 404, timeout, rate limiting (429), malformed JSON.
-- `[STEP]` Add basic `pytest` tests for the business rules (`check_stale_repos`, `check_needs_attention`) now that they're simple, isolated functions — good candidates for testing before the file gets split.
-- `[STEP]` Export the Postman collection into a `postman/` folder in the project.
-- `[STEP]` Write the README once the project structure stabilizes after the file split.
+- `[STEP]` Export the Postman collection into a `postman/` folder.
+- `[STEP]` Write the README.

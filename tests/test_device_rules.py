@@ -1,5 +1,4 @@
-from main import check_stale_repos
-from main import check_needs_attention
+from device_rules import check_needs_attention, check_stale_repos
 
 
 def test_check_stale_repos():
