@@ -1,8 +1,8 @@
 # DEVICE STATUS API CLIENT BUILD / STEPS
 
-**ORIGIN STORY (for interviews):** "I built a device-status concept with static local JSON first (forklift project), realized I needed real API and auth experience before building my own API, went and got that experience deliberately with GitHub's REST API (device status client API project), then came back and finished the forklift project properly."
+**ORIGIN STORY:** "I built a device-status concept with static local JSON first (forklift project), realized I needed real API and auth experience before building my own API, went and got that experience deliberately with GitHub's REST API (device status client API project), then came back and finished the forklift project properly."
 
-This file includes each building block / step I took and why (used for explaining the project on my resume, in a README, and out loud in an interview).
+This file includes each building block / step I took and why.
 
 **Legend:** `[STEP]` = something I did/built. `[CONCEPT]` = something I learned/understood along the way. Some lines are both.
 
