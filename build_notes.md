@@ -231,7 +231,18 @@ This file includes each building block / step I took and why (used for explainin
 - `[STEP]` Re-verified both ways after the split, same rigor as every other change in this project: `python main.py` (full report, real username, still works end to end) and `pytest` (all 4 tests still passing) — confirms the split was purely structural and didn't change any actual behavior.
 - `[CONCEPT]` Treated this as one commit covering all five changed files (`main.py`, three new modules, the test file) — reasoning: it's one coherent architectural change (the split), not several unrelated edits that happened to land together.
 
+## POSTMAN COLLECTION EXPORT
+
+- `[CONCEPT]` A shared Postman collection is a real SE/implementation deliverable — it lets a colleague or customer's team run every tested request immediately, with correct auth already wired up, without reverse-engineering the API from scratch. Documentation that's also directly runnable.
+- `[CONCEPT]` Realized the original request had the real token pasted directly into it — same class of risk as the earlier `.txt` file and `.env.py` incidents, just surfacing in a new tool. Needed to fix this before exporting anything.
+- `[STEP]` Created a Postman **Environment** (`GitHub API - Local`) with a `github_token` variable, and updated the request's Authorization to reference `{{github_token}}` instead of the raw value. Postman's own prompt flagged the token and offered to mark it as a **secret** variable — accepted, which makes Postman automatically blank the value out on export rather than requiring manual scrubbing.
+- `[STEP]` Renamed the request from the default "New Request" to something descriptive (matching GitHub's own "list repositories for a user" language) — a collection meant for someone else to read needs to be self-explanatory, not just functional.
+- `[STEP]` Parameterized the request URL too, mirroring the exact fix already made in the Python code: `https://api.github.com/users/DJH333/repos` → `https://api.github.com/users/:username/repos`, using Postman's path-variable syntax (single colon, `:username` — distinct from the double-curly-brace `{{github_token}}` environment-variable syntax used for the token).
+- `[CONCEPT]` Left the `username` path variable's example value either empty or set to a generic placeholder (e.g. GitHub's own `octocat` example account) rather than a real personal username — same reasoning as never leaving real personal data in a file meant to be shared.
+- `[STEP]` Exported both the collection (`Device Status API Client.postman_collection.json`) and the environment (`GitHub API - Local.postman_environment.json`) into a new `postman/` folder in the project, matching the original planned project structure.
+- `[STEP]` Verified directly, before committing — didn't just trust Postman's "secret" marking — by opening the exported environment JSON and confirming `"value": ""` with `"secret": true` for the token field. Same "check, don't assume" habit applied throughout this project.
+- `[STEP]` Committed both files together with a message naming the export and the security consideration explicitly.
+
 ## NEXT UP
 
-- `[STEP]` Export the Postman collection into a `postman/` folder.
 - `[STEP]` Write the README.

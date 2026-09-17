@@ -1,0 +1,19 @@
+{
+  "info": {
+    "_postman_id": "9c0beeea-22c8-4a53-94fc-4af17db7548e",
+    "name": "Device Status API Client",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57396600",
+    "_collection_link": "https://go.postman.co/collection/57396600-9c0beeea-22c8-4a53-94fc-4af17db7548e?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Get User Repositories",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    }
+  ]
+}
